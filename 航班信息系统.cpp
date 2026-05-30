@@ -446,7 +446,7 @@ void showPassenger()
     }
     printf("\n====================== 信息显示完毕 ======================\n");
 }
-//
+//显示订单
 void showOrderFile()
 {
     FILE* fp;
@@ -500,17 +500,159 @@ void showOrderFile()
 
     fclose(fp);
 }
-//菜单函数
-void menu()
+//航班信息保存函数
+void saveFlight()
+{
+    FILE* fp;
+
+    fp = fopen("flight.txt", "w");
+
+    if (fp == NULL)
+    {
+        printf("保存失败！\n");
+        return;
+    }
+
+    int i;
+
+    for (i = 0; i < flightCount; i++)
+    {
+        fprintf(fp,
+            "%s %s %s %s %s %s %.2f %d %d\n",
+            flight[i].flightNo,
+            flight[i].start,
+            flight[i].destination,
+            flight[i].date,
+            flight[i].startTime,
+            flight[i].arriveTime,
+            flight[i].price,
+            flight[i].totalSeat,
+            flight[i].remainSeat);
+    }
+
+    fclose(fp);
+}
+//修改航班函数
+void updateFlight()
+{
+    char no[20];
+
+    printf("请输入航班号:");
+    scanf("%s", no);
+
+    int pos = findFlight(no);
+
+    if (pos == -1)
+    {
+        printf("航班不存在！\n");
+        return;
+    }
+
+    printf("当前票价：%.2f\n",
+        flight[pos].price);
+
+    printf("输入新票价:");
+    scanf("%f",
+        &flight[pos].price);
+
+    saveFlight();
+
+    printf("修改成功！\n");
+}
+//航班增添函数
+void addFlight()
+{
+    Flight f;
+
+    printf("航班号:");
+    scanf("%s", f.flightNo);
+
+    printf("出发地:");
+    scanf("%s", f.start);
+
+    printf("目的地:");
+    scanf("%s", f.destination);
+
+    printf("日期:");
+    scanf("%s", f.date);
+
+    printf("起飞时间:");
+    scanf("%s", f.startTime);
+
+    printf("到达时间:");
+    scanf("%s", f.arriveTime);
+
+    printf("票价:");
+    scanf("%f", &f.price);
+
+    printf("总座位:");
+    scanf("%d", &f.totalSeat);
+
+    f.remainSeat = f.totalSeat;
+
+    f.plist = NULL;
+
+    flight[flightCount++] = f;
+
+    saveFlight();
+
+    printf("新增成功！\n");
+}
+//航班删除函数
+void deleteFlight()
+{
+    char no[20];
+
+    printf("输入航班号:");
+
+    scanf("%s", no);
+
+    int pos = findFlight(no);
+
+    if (pos == -1)
+    {
+        printf("航班不存在！\n");
+        return;
+    }
+
+    int i;
+
+    for (i = pos; i < flightCount - 1; i++)
+    {
+        flight[i] = flight[i + 1];
+    }
+
+    flightCount--;
+
+    saveFlight();
+
+    printf("删除成功！\n");
+}
+
+//用户界面
+void userMenu()
 {
     printf("\n");
-    printf("=====航空票务管理系统=====\n");
+    printf("========== 用户菜单 ==========\n");
     printf("1 显示航班\n");
-    printf("2 查询目的地\n");
+    printf("2 查询航班\n");
     printf("3 办理订票\n");
     printf("4 办理退票\n");
-    printf("5 查看订票客户\n");
-	printf("6 查看订单记录\n");
+    printf("5 查看订单记录\n");
+    printf("0 退出系统\n");
+}
+//管理员界面
+void adminMenu()
+{
+    printf("\n");
+    printf("========== 管理员菜单 ==========\n");
+    printf("1 显示航班\n");
+    printf("2 查询航班\n");
+    printf("3 新增航班\n");
+    printf("4 删除航班\n");
+    printf("5 修改航班\n");
+    printf("6 查看订票客户\n");
+    printf("7 查看订单记录\n");
     printf("0 退出系统\n");
 }
 //主函数
@@ -526,38 +668,82 @@ int main()
         printf("登录失败\n");
         return 0;
     }
-    while (1)
+    if (role == 0)
     {
-        menu();
-        scanf("%d", &choice);
-        switch (choice)
+        while (1)
         {
-        case 1:
-            showFlight();
-            break;
+            adminMenu();
+            scanf("%d", &choice);
+            switch (choice)
+            {
+            case 1:
+                showFlight();
+                break;
 
-        case 2:
-            searchDestination();
-            break;
+            case 2:
+                searchDestination();
+                break;
 
-        case 3:
-            bookTicket();
-            break;
+            case 3:
+                addFlight();
+                break;
 
-        case 4:
-            refundTicket();
-            break;
+            case 4:
+                deleteFlight();
+                break;
 
-        case 5:
-            showPassenger();
-            break;
+            case 5:
+                updateFlight();
+                break;
 
-        case 6:
-			showOrderFile();
-			break;
+            case 6:
+                showPassenger();
+                break;
 
-        case 0:
-            return 0;
+            case 7:
+                showOrderFile();
+                break;
+
+            case 0:
+                return 0;
+            }
         }
     }
+    else
+    {
+        while (1)
+        {
+            userMenu();
+
+            scanf("%d", &choice);
+
+            switch (choice)
+            {
+            case 1:
+                showFlight();
+                break;
+
+            case 2:
+                searchDestination();
+                break;
+
+            case 3:
+                bookTicket();
+                break;
+
+            case 4:
+                refundTicket();
+                break;
+
+            case 5:
+                showOrderFile();
+                break;
+
+            case 0:
+                return 0;
+            }
+        }
+    }
+    
+   
 }

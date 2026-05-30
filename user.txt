@@ -1,5 +1,5 @@
-admin 123456 1
-luoguoyou 123456 0
-xialiji 123456 0
-wuguofeng 123456 0
-yanhanchao 123456 0
+admin 123456 0
+luoguoyou 123456 1
+xialiji 123456 1
+wuguofeng 123456 1
+yanhanchao 123456 1
