@@ -171,6 +171,38 @@ void generateOrderId(char orderId[])
         count++);
 
 }
+//航班信息保存函数
+void saveFlight()
+{
+    FILE* fp;
+
+    fp = fopen("flight.txt", "w");
+
+    if (fp == NULL)
+    {
+        printf("保存失败！\n");
+        return;
+    }
+
+    int i;
+
+    for (i = 0; i < flightCount; i++)
+    {
+        fprintf(fp,
+            "%s %s %s %s %s %s %.2f %d %d\n",
+            flight[i].flightNo,
+            flight[i].start,
+            flight[i].destination,
+            flight[i].date,
+            flight[i].startTime,
+            flight[i].arriveTime,
+            flight[i].price,
+            flight[i].totalSeat,
+            flight[i].remainSeat);
+    }
+
+    fclose(fp);
+}
 //查询航班函数
 int findFlight(char no[])
 {
@@ -347,60 +379,108 @@ void bookTicket()
     printf("====================================\n");
 }
 //退票函数（按订单号退票）
+//退票函数（基于 passenger.txt）
 void refundTicket()
 {
-    char orderId[20];
+    char targetOrderId[20];
+
     printf("请输入订单号:");
-    scanf("%s", orderId);
-    int i;
-    /* 遍历所有航班 */
-    for (i = 0; i < flightCount; i++)
+    scanf("%s", targetOrderId);
+
+    FILE* fp = fopen("passenger.txt", "r");
+
+    if (fp == NULL)
     {
-        Passenger* pre = NULL;
-        Passenger* cur = flight[i].plist;
+        printf("暂无订单记录！\n");
+        return;
+    }
 
-        while (cur != NULL)
+    FILE* temp = fopen("temp.txt", "w");
+
+    char orderId[20];
+    char flightNo[20];
+    char name[20];
+    char phone[20];
+    char id[30];
+    int ticketNum;
+
+    int found = 0;
+
+    while (fscanf(fp,
+        "%s%s%s%s%s%d",
+        orderId,
+        flightNo,
+        name,
+        phone,
+        id,
+        &ticketNum) != EOF)
+    {
+        // 找到需要退票的订单
+        if (strcmp(orderId, targetOrderId) == 0)
         {
-            if (strcmp(cur->orderId, orderId) == 0)
-            {
-                /* 恢复余票 */
-                flight[i].remainSeat += cur->ticketNum;
+            found = 1;
 
-                /* 删除链表节点 */
-                if (pre == NULL)
-                {
-                    flight[i].plist = cur->next;
-                }
-                else
-                {
-                    pre->next = cur->next;
-                }
+            int pos = findFlight(flightNo);
+
+            if (pos != -1)
+            {
+                // 恢复余票
+                flight[pos].remainSeat += ticketNum;
+
                 printf("\n====================================\n");
                 printf("                退票成功\n");
                 printf("====================================\n");
-                printf("订单编号：%s\n",cur->orderId);
-                printf("乘客姓名：%s\n",cur->name);
-                printf("航班号：%s\n",flight[i].flightNo);
-                printf("航线：%s -> %s\n",flight[i].start,flight[i].destination);
-                printf("退票数量：%d 张\n",cur->ticketNum);
-                printf("当前余票：%d 张\n",flight[i].remainSeat);
+                printf("订单编号：%s\n", orderId);
+                printf("乘客姓名：%s\n", name);
+                printf("航班号：%s\n", flightNo);
+                printf("航线：%s -> %s\n",
+                    flight[pos].start,
+                    flight[pos].destination);
+                printf("退票数量：%d 张\n", ticketNum);
+                printf("当前余票：%d 张\n",
+                    flight[pos].remainSeat);
                 printf("====================================\n");
-                deletePassengerFromFile(orderId);
-                free(cur);
-
-                /* 候补自动补票 */
-                if (!isEmpty())
-                {
-                    WaitingPassenger w =dequeue();
-                    printf("\n候补乘客 %s 自动补票成功！\n",w.name);
-                }
-                return;
             }
-            pre = cur;
-            cur = cur->next;
+
+            // 不写入temp，相当于删除订单
+            continue;
         }
+
+        // 保留其它订单
+        fprintf(temp,
+            "%s %s %s %s %s %d\n",
+            orderId,
+            flightNo,
+            name,
+            phone,
+            id,
+            ticketNum);
     }
-    printf("未找到该订单号！\n");
+
+    fclose(fp);
+    fclose(temp);
+
+    // 用新文件替换旧文件
+    remove("passenger.txt");
+    rename("temp.txt", "passenger.txt");
+
+    if (!found)
+    {
+        printf("未找到该订单号！\n");
+        return;
+    }
+
+    // 保存更新后的航班余票
+    saveFlight();
+
+    // 候补处理
+    if (!isEmpty())
+    {
+        WaitingPassenger w = dequeue();
+
+        printf("\n候补乘客 %s 自动补票成功！\n",
+            w.name);
+    }
 }
 //显示所有航班及订票客户信息
 void showPassenger()
@@ -548,38 +628,7 @@ void showOrderFile()
 
     fclose(fp);
 }
-//航班信息保存函数
-void saveFlight()
-{
-    FILE* fp;
 
-    fp = fopen("flight.txt", "w");
-
-    if (fp == NULL)
-    {
-        printf("保存失败！\n");
-        return;
-    }
-
-    int i;
-
-    for (i = 0; i < flightCount; i++)
-    {
-        fprintf(fp,
-            "%s %s %s %s %s %s %.2f %d %d\n",
-            flight[i].flightNo,
-            flight[i].start,
-            flight[i].destination,
-            flight[i].date,
-            flight[i].startTime,
-            flight[i].arriveTime,
-            flight[i].price,
-            flight[i].totalSeat,
-            flight[i].remainSeat);
-    }
-
-    fclose(fp);
-}
 //修改航班函数
 void updateFlight()
 {
