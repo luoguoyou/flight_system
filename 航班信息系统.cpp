@@ -171,7 +171,7 @@ void generateOrderId(char orderId[])
         count++);
 
 }
-//航班信息保存函数
+//航班保存函数
 void saveFlight()
 {
     FILE* fp;
@@ -379,7 +379,6 @@ void bookTicket()
     printf("====================================\n");
 }
 //退票函数（按订单号退票）
-//退票函数（基于 passenger.txt）
 void refundTicket()
 {
     char targetOrderId[20];
@@ -628,7 +627,6 @@ void showOrderFile()
 
     fclose(fp);
 }
-
 //修改航班函数
 void updateFlight()
 {
@@ -725,7 +723,6 @@ void deleteFlight()
 
     printf("删除成功！\n");
 }
-
 //用户界面
 void userMenu()
 {
