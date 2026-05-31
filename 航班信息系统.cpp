@@ -406,44 +406,92 @@ void refundTicket()
 void showPassenger()
 {
     int i;
-    Passenger* p;
 
     printf("\n====================== 航班及订票客户信息 ======================\n");
 
     for (i = 0; i < flightCount; i++)
     {
+        FILE* fp;
+
+        char orderId[20];
+        char flightNo[20];
+        char name[20];
+        char phone[20];
+        char id[30];
+        int ticketNum;
+
+        int hasPassenger = 0;
+
+        fp = fopen("passenger.txt", "r");
+
+        if (fp == NULL)
+        {
+            printf("暂无订票记录！\n");
+            return;
+        }
+
         printf("\n");
         printf("==========================================================\n");
-        printf("航班号：%-12s 日期：%-12s\n", flight[i].flightNo,flight[i].date);
-        printf("出发地：%-8s     目的地：%-8s\n",flight[i].start,flight[i].destination);
-        printf("起飞时间：%-8s   到达时间：%-8s\n",flight[i].startTime,flight[i].arriveTime);
-        printf("总座位：%-8d     剩余票数：%-8d\n",flight[i].totalSeat,flight[i].remainSeat);
+        printf("航班号：%-12s 日期：%-12s\n",
+            flight[i].flightNo,
+            flight[i].date);
+
+        printf("出发地：%-8s     目的地：%-8s\n",
+            flight[i].start,
+            flight[i].destination);
+
+        printf("起飞时间：%-8s   到达时间：%-8s\n",
+            flight[i].startTime,
+            flight[i].arriveTime);
+
+        printf("总座位：%-8d     剩余票数：%-8d\n",
+            flight[i].totalSeat,
+            flight[i].remainSeat);
+
         printf("----------------------------------------------------------\n");
-        p = flight[i].plist;
-        if (p == NULL)
+
+        while (fscanf(fp,
+            "%s%s%s%s%s%d",
+            orderId,
+            flightNo,
+            name,
+            phone,
+            id,
+            &ticketNum) != EOF)
+        {
+            if (strcmp(flightNo, flight[i].flightNo) == 0)
+            {
+                if (!hasPassenger)
+                {
+                    printf("%-12s %-10s %-15s %-20s %-8s\n",
+                        "订单号",
+                        "姓名",
+                        "电话",
+                        "身份证",
+                        "票数");
+
+                    printf("==========================================================\n");
+
+                    hasPassenger = 1;
+                }
+
+                printf("%-12s %-10s %-15s %-20s %-8d\n",
+                    orderId,
+                    name,
+                    phone,
+                    id,
+                    ticketNum);
+            }
+        }
+
+        if (!hasPassenger)
         {
             printf("暂无订票客户！\n");
-            continue;
         }
-        printf("%-12s %-10s %-15s %-20s %-8s\n",
-            "订单号",
-            "姓名",
-            "电话",
-            "身份证",
-            "票数");
-        printf("==========================================================\n");
-        printf("\n");
-        while (p)
-        {
-            printf("%-12s %-10s %-15s %-20s %-8d\n",
-                p->orderId,
-                p->name,
-                p->phone,
-                p->id,
-                p->ticketNum);
-            p = p->next;
-        }
+
+        fclose(fp);
     }
+
     printf("\n====================== 信息显示完毕 ======================\n");
 }
 //显示订单

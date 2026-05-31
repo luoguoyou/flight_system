@@ -139,7 +139,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="flight.cpp" />
     <ClCompile Include="航班信息系统.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -148,9 +147,6 @@
     <Text Include="flight.txt" />
     <Text Include="passenger.txt" />
     <Text Include="user.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="flight.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
