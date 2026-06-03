@@ -1,6 +1,15 @@
 #include "utils.h"
 
 #include "common.h"
+#include <clocale>
+#include <windows.h>
+
+void initConsole()
+{
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+    setlocale(LC_ALL, ".UTF-8");
+}
 
 void stripBom(char text[])
 {

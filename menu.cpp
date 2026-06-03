@@ -3,6 +3,7 @@
 #include "booking.h"
 #include "flight_ops.h"
 #include "user.h"
+#include "utils.h"
 #include "waitlist.h"
 
 void userMenu()
@@ -38,6 +39,7 @@ void runSystem()
     int role;
     int choice;
 
+    initConsole();
     loadUser();
     loadFlight();
     loadWaitQueue();
