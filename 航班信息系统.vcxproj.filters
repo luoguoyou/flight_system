@@ -33,6 +33,18 @@
     <ClCompile Include="booking.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="client.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="protocol.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="server.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="service.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="menu.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -63,6 +75,18 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="booking.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="client.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="server.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="service.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="menu.h">
