@@ -13,6 +13,7 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
+// 确保一整段响应文本被完整发送给客户端。
 static bool sendAll(SOCKET client, const std::string& text)
 {
     const char* data = text.c_str();
@@ -32,6 +33,8 @@ static bool sendAll(SOCKET client, const std::string& text)
     return true;
 }
 
+// 按“单行文本协议”从 socket 中读取一条完整请求。
+// 以换行符作为一条请求结束的标记。
 static bool readLine(SOCKET client, std::string& line)
 {
     line.clear();
@@ -57,6 +60,8 @@ static bool readLine(SOCKET client, std::string& line)
     }
 }
 
+// 处理一个具体客户端连接：
+// 循环读取请求，交给业务层处理，再把结果回写给客户端。
 static void handleClient(SOCKET client, int clientNo)
 {
     printf("客户端 #%d 已连接\n", clientNo);
@@ -77,6 +82,8 @@ static void handleClient(SOCKET client, int clientNo)
     printf("客户端 #%d 已断开\n", clientNo);
 }
 
+// 服务端入口：
+// 初始化控制台和业务数据，启动监听端口，并为每个客户端创建处理线程。
 void runServer()
 {
     initConsole();
@@ -128,6 +135,7 @@ void runServer()
     std::atomic<int> clientCounter = 0;
     while (true)
     {
+        // 每接受到一个新连接，就分配一个编号并交给独立线程处理。
         SOCKET client = accept(listenSocket, NULL, NULL);
         if (client == INVALID_SOCKET)
         {

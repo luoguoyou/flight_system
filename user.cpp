@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "utils.h"
 
+// 从 user.txt 读取所有用户账号到全局用户数组。
 void loadUser()
 {
     FILE* fp = fopen("user.txt", "r");
@@ -27,6 +28,9 @@ void loadUser()
     fclose(fp);
 }
 
+// 本地版登录流程：
+// 输入用户名和密码后，在已加载的用户数组中逐个比对，
+// 成功则返回角色，失败返回 -1。
 int login()
 {
     char user[20];

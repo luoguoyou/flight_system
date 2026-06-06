@@ -3,6 +3,8 @@
 #include "globals.h"
 #include "utils.h"
 
+// 当前端已有空位被删除后，压缩候补数组，
+// 避免 front 持续后移造成空间浪费。
 static void compactWaitQueue()
 {
     if (front == 0)
@@ -22,11 +24,14 @@ static void compactWaitQueue()
     rear = count;
 }
 
+// 判断候补队列当前是否为空。
 static int isEmpty()
 {
     return front == rear;
 }
 
+// 将一位乘客加入候补队列。
+// 如果数组尾部已满，会先尝试压缩前面已经空出的空间。
 int enqueueWaitPassenger(Passenger* p, char no[])
 {
     if (rear >= MAX_WAIT)
@@ -48,6 +53,7 @@ int enqueueWaitPassenger(Passenger* p, char no[])
     return 1;
 }
 
+// 把当前候补队列保存到 wait.txt。
 void saveWaitQueue()
 {
     FILE* fp = fopen("wait.txt", "w");
@@ -73,6 +79,7 @@ void saveWaitQueue()
     fclose(fp);
 }
 
+// 从 wait.txt 加载候补队列到内存。
 void loadWaitQueue()
 {
     FILE* fp = fopen("wait.txt", "r");
@@ -103,6 +110,7 @@ void loadWaitQueue()
     fclose(fp);
 }
 
+// 按航班号找到该航班在候补队列中的第一位乘客。
 int findFirstWaitingIndex(char flightNo[])
 {
     int i;
@@ -118,6 +126,8 @@ int findFirstWaitingIndex(char flightNo[])
     return -1;
 }
 
+// 删除候补队列中指定位置的乘客。
+// 如果调用方需要，也会把被删除的乘客信息带出去。
 int removeWaitingAt(int index, WaitingPassenger* removedPassenger)
 {
     int i;
@@ -148,6 +158,7 @@ int removeWaitingAt(int index, WaitingPassenger* removedPassenger)
     return 1;
 }
 
+// 以表格形式显示当前候补队列。
 void showWaitQueue()
 {
     int i;

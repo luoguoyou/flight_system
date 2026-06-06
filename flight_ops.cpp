@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "utils.h"
 
+// 从 flight.txt 读取航班基础数据到全局航班数组。
 void loadFlight()
 {
     FILE* fp = fopen("flight.txt", "r");
@@ -35,6 +36,7 @@ void loadFlight()
     fclose(fp);
 }
 
+// 以表格方式显示当前所有航班信息。
 void showFlight()
 {
     int i;
@@ -70,11 +72,13 @@ void showFlight()
     printf("====================================================================================================================\n");
 }
 
+// 生成递增的订单号，格式为 OD000001。
 void generateOrderId(char orderId[])
 {
     sprintf(orderId, "OD%06d", nextOrderNumber++);
 }
 
+// 把当前内存中的航班数组重新写回 flight.txt。
 void saveFlight()
 {
     FILE* fp = fopen("flight.txt", "w");
@@ -104,6 +108,7 @@ void saveFlight()
     fclose(fp);
 }
 
+// 按航班号在全局航班数组中查找对应位置。
 int findFlight(char no[])
 {
     int i;
@@ -119,6 +124,7 @@ int findFlight(char no[])
     return -1;
 }
 
+// 本地版按“目的地关键字”查询航班。
 void searchDestination()
 {
     char key[20];
@@ -141,6 +147,8 @@ void searchDestination()
     }
 }
 
+// 启动时扫描 passenger.txt，找到当前最大的订单号，
+// 让新订单号可以在原有基础上继续递增。
 void initOrderNumber()
 {
     FILE* fp = fopen("passenger.txt", "r");
@@ -181,6 +189,7 @@ void initOrderNumber()
     fclose(fp);
 }
 
+// 管理员查看“按航班分组的订票客户信息”。
 void showPassenger()
 {
     int i;
@@ -254,6 +263,7 @@ void showPassenger()
     printf("\n====================== 信息显示完毕 ======================\n");
 }
 
+// 直接查看 passenger.txt 中的全部订单记录。
 void showOrderFile()
 {
     FILE* fp = fopen("passenger.txt", "r");
@@ -301,6 +311,7 @@ void showOrderFile()
     fclose(fp);
 }
 
+// 管理员按航班号修改票价。
 void updateFlight()
 {
     char no[20];
@@ -324,6 +335,7 @@ void updateFlight()
     printf("修改成功！\n");
 }
 
+// 管理员新增一条航班记录，并默认把余票设置为总座位数。
 void addFlight()
 {
     Flight f;
@@ -353,6 +365,8 @@ void addFlight()
     printf("新增成功！\n");
 }
 
+// 管理员按航班号删除航班。
+// 删除方式是把后面的航班前移覆盖当前位置。
 void deleteFlight()
 {
     char no[20];

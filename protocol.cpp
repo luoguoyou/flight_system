@@ -1,5 +1,7 @@
 #include "protocol.h"
 
+// 把十六进制字符转换成对应数值。
+// 主要用于解析经过转义后的 %XX 形式内容。
 static int hexValue(char ch)
 {
     if (ch >= '0' && ch <= '9')
@@ -17,6 +19,8 @@ static int hexValue(char ch)
     return -1;
 }
 
+// 对单个字段做转义，避免字段内容中的 |、% 和换行符
+// 破坏自定义协议的分隔格式。
 std::string escapeField(const std::string& value)
 {
     static const char* digits = "0123456789ABCDEF";
@@ -39,6 +43,7 @@ std::string escapeField(const std::string& value)
     return result;
 }
 
+// 把 %XX 形式的转义内容还原回原始字符。
 std::string unescapeField(const std::string& value)
 {
     std::string result;
@@ -63,6 +68,7 @@ std::string unescapeField(const std::string& value)
     return result;
 }
 
+// 按 | 分隔一个完整协议包，并对每个字段做反转义。
 std::vector<std::string> splitPacket(const std::string& packet)
 {
     std::vector<std::string> fields;
@@ -85,6 +91,8 @@ std::vector<std::string> splitPacket(const std::string& packet)
     return fields;
 }
 
+// 把多个字段拼成一个协议包，字段之间用 | 分隔，
+// 并先对每个字段执行转义。
 std::string makePacket(const std::vector<std::string>& fields)
 {
     std::string packet;

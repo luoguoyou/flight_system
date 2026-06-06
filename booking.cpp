@@ -4,6 +4,8 @@
 #include "globals.h"
 #include "waitlist.h"
 
+// 当某位候补乘客满足补票条件时，
+// 把候补信息转成正式乘客订单并写入订单文件。
 static void confirmWaitingPassenger(int flightPos, WaitingPassenger* w)
 {
     Passenger* p = (Passenger*)malloc(sizeof(Passenger));
@@ -31,6 +33,8 @@ static void confirmWaitingPassenger(int flightPos, WaitingPassenger* w)
     printf("当前余票：%d 张\n", flight[flightPos].remainSeat);
 }
 
+// 某个航班有空余座位后，按候补顺序依次检查，
+// 只要余票足够就为对应候补乘客自动补票。
 static void processWaitingListForFlight(int flightPos)
 {
     while (1)
@@ -59,6 +63,7 @@ static void processWaitingListForFlight(int flightPos)
     saveWaitQueue();
 }
 
+// 把一条订票记录追加保存到 passenger.txt。
 void savePassengerToFile(Passenger* p, char flightNo[])
 {
     FILE* fp = fopen("passenger.txt", "a");
@@ -81,6 +86,8 @@ void savePassengerToFile(Passenger* p, char flightNo[])
     fclose(fp);
 }
 
+// 按订单号从 passenger.txt 删除一条订票记录。
+// 这里采用“读旧文件 + 写临时文件 + 替换原文件”的方式实现。
 void deletePassengerFromFile(char orderId[])
 {
     FILE* fp = fopen("passenger.txt", "r");
@@ -125,6 +132,9 @@ void deletePassengerFromFile(char orderId[])
     rename("temp.txt", "passenger.txt");
 }
 
+// 本地版订票主流程：
+// 先查找航班，再录入乘客信息；
+// 余票足够时直接完成订票，余票不足时转入候补判断。
 void bookTicket()
 {
     char no[20];
@@ -161,6 +171,7 @@ void bookTicket()
         return;
     }
 
+    // 如果余票不足，则询问用户是否加入候补队列。
     if (flight[pos].remainSeat < p->ticketNum)
     {
         int choice;
@@ -185,6 +196,7 @@ void bookTicket()
         return;
     }
 
+    // 余票充足时，生成订单号并把乘客挂到该航班的订票链表上。
     generateOrderId(p->orderId);
     p->next = flight[pos].plist;
     flight[pos].plist = p;
@@ -213,6 +225,9 @@ void bookTicket()
     printf("====================================\n");
 }
 
+// 本地版退票主流程：
+// 按订单号查找订单，退票后恢复航班余票，
+// 最后再尝试处理该航班的候补队列。
 void refundTicket()
 {
     char targetOrderId[20];
