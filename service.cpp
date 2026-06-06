@@ -1,5 +1,6 @@
 #include "service.h"
 
+#include "booking.h"
 #include "flight_ops.h"
 #include "globals.h"
 #include "protocol.h"
