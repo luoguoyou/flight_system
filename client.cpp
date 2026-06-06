@@ -3,8 +3,8 @@
 #include "protocol.h"
 #include "utils.h"
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <string>
@@ -126,6 +126,7 @@ private:
             {
                 return false;
             }
+
             data += sent;
             left -= sent;
         }
@@ -175,33 +176,7 @@ static std::string inputLine(const std::string& prompt)
     return value;
 }
 
-static void showMenu(const Session& session)
-{
-    std::cout << "\n========== 航班订票客户端 ==========\n";
-    std::cout << "当前用户：" << (session.loggedIn ? session.username : "未登录") << "\n";
-    std::cout << "1 注册\n";
-    std::cout << "2 登录\n";
-    std::cout << "3 查票\n";
-    std::cout << "4 订票\n";
-    std::cout << "5 退票\n";
-    std::cout << "6 改签\n";
-    std::cout << "7 查看订单\n";
-    std::cout << "0 退出\n";
-    std::cout << "请选择：";
-}
-
-static bool requireLogin(const Session& session)
-{
-    if (!session.loggedIn)
-    {
-        std::cout << "请先登录\n";
-        return false;
-    }
-
-    return true;
-}
-
-static bool sendAndPrint(TcpClient& client, const std::vector<std::string>& fields, std::vector<std::string>* raw = NULL)
+static bool sendRequest(TcpClient& client, const std::vector<std::string>& fields, std::vector<std::string>* raw = NULL)
 {
     std::vector<std::string> response;
 
@@ -228,87 +203,229 @@ static bool sendAndPrint(TcpClient& client, const std::vector<std::string>& fiel
     return !response.empty() && response[0] == "OK";
 }
 
-static void doRegister(TcpClient& client)
+static bool requireLogin(const Session& session)
 {
-    std::string username = inputLine("用户名：");
-    std::string password = inputLine("密码：");
-    sendAndPrint(client, { "REGISTER", username, password });
+    if (!session.loggedIn)
+    {
+        std::cout << "请先登录\n";
+        return false;
+    }
+
+    return true;
 }
 
-static void doLogin(TcpClient& client, Session& session)
+static bool requireAdmin(const Session& session)
 {
-    std::string username = inputLine("用户名：");
-    std::string password = inputLine("密码：");
+    if (!requireLogin(session))
+    {
+        return false;
+    }
+
+    if (session.role != 0)
+    {
+        std::cout << "当前账号不是管理员\n";
+        return false;
+    }
+
+    return true;
+}
+
+static bool loginFlow(TcpClient& client, Session& session)
+{
+    while (true)
+    {
+        std::cout << "\n1 注册\n";
+        std::cout << "2 登录\n";
+        std::cout << "0 退出系统\n";
+        std::cout << "请选择：";
+
+        std::string choice;
+        std::getline(std::cin, choice);
+
+        if (choice == "1")
+        {
+            std::string username = inputLine("用户名:");
+            std::string password = inputLine("密码:");
+            sendRequest(client, { "REGISTER", username, password });
+            continue;
+        }
+
+        if (choice == "2")
+        {
+            std::string username = inputLine("用户名:");
+            std::string password = inputLine("密码:");
+            std::vector<std::string> response;
+
+            if (sendRequest(client, { "LOGIN", username, password }, &response) && response.size() >= 5)
+            {
+                session.loggedIn = true;
+                session.role = atoi(response[2].c_str());
+                session.username = response[3];
+                session.token = response[4];
+                return true;
+            }
+
+            continue;
+        }
+
+        if (choice == "0")
+        {
+            return false;
+        }
+
+        std::cout << "无效选择\n";
+    }
+}
+
+static void userMenu()
+{
+    printf("\n");
+    printf("========== 用户菜单 ==========\n");
+    printf("1 显示航班\n");
+    printf("2 查询航班\n");
+    printf("3 办理订票\n");
+    printf("4 办理退票\n");
+    printf("5 查看订单记录\n");
+    printf("6 查看候补队列\n");
+    printf("0 退出系统\n");
+}
+
+static void adminMenu()
+{
+    printf("\n");
+    printf("========== 管理员菜单 ==========\n");
+    printf("1 显示航班\n");
+    printf("2 查询航班\n");
+    printf("3 新增航班\n");
+    printf("4 删除航班\n");
+    printf("5 修改航班\n");
+    printf("6 查看订票客户\n");
+    printf("7 查看订单记录\n");
+    printf("8 查看候补队列\n");
+    printf("0 退出系统\n");
+}
+
+static void showFlights(TcpClient& client)
+{
+    sendRequest(client, { "LIST_FLIGHTS" });
+}
+
+static void searchFlights(TcpClient& client)
+{
+    std::string destination = inputLine("请输入目的地:");
+    sendRequest(client, { "SEARCH_DESTINATION", destination });
+}
+
+static void bookTicket(TcpClient& client, const Session& session)
+{
+    if (!requireLogin(session))
+    {
+        return;
+    }
+
+    std::string flightNo = inputLine("请输入航班号:");
+    std::string name = inputLine("请输入姓名:");
+    std::string phone = inputLine("请输入电话:");
+    std::string id = inputLine("请输入身份证号:");
+    std::string ticketNum = inputLine("请输入订票数量:");
+
     std::vector<std::string> response;
-
-    if (sendAndPrint(client, { "LOGIN", username, password }, &response) && response.size() >= 5)
+    if (sendRequest(client, { "BOOK", session.token, flightNo, name, phone, id, ticketNum }, &response))
     {
-        session.loggedIn = true;
-        session.role = atoi(response[2].c_str());
-        session.username = response[3];
-        session.token = response[4];
+        return;
+    }
+
+    if (response.size() >= 2 && response[1].find("余票不足") != std::string::npos)
+    {
+        std::string choice = inputLine("是否进入候补队列？1-是 0-否:");
+        if (choice == "1")
+        {
+            sendRequest(client, { "BOOK", session.token, flightNo, name, phone, id, ticketNum, "WAIT" });
+        }
     }
 }
 
-static void doSearch(TcpClient& client)
-{
-    std::string key = inputLine("输入航班号/出发地/目的地/日期（直接回车显示全部）：");
-    if (key.empty())
-    {
-        sendAndPrint(client, { "LIST_FLIGHTS" });
-    }
-    else
-    {
-        sendAndPrint(client, { "SEARCH_FLIGHT", key });
-    }
-}
-
-static void doBook(TcpClient& client, const Session& session)
+static void refundTicket(TcpClient& client, const Session& session)
 {
     if (!requireLogin(session))
     {
         return;
     }
 
-    std::string flightNo = inputLine("航班号：");
-    std::string phone = inputLine("电话：");
-    std::string id = inputLine("身份证：");
-    std::string ticketNum = inputLine("订票数量：");
-
-    sendAndPrint(client, { "BOOK", session.token, flightNo, phone, id, ticketNum });
+    std::string orderId = inputLine("请输入订单号:");
+    sendRequest(client, { "REFUND", session.token, orderId });
 }
 
-static void doRefund(TcpClient& client, const Session& session)
+static void showOrderFile(TcpClient& client, const Session& session)
 {
     if (!requireLogin(session))
     {
         return;
     }
 
-    std::string orderId = inputLine("订单号：");
-    sendAndPrint(client, { "REFUND", session.token, orderId });
+    sendRequest(client, { "SHOW_ORDERS", session.token });
 }
 
-static void doChange(TcpClient& client, const Session& session)
+static void showWaitQueue(TcpClient& client, const Session& session)
 {
     if (!requireLogin(session))
     {
         return;
     }
 
-    std::string orderId = inputLine("订单号：");
-    std::string newFlightNo = inputLine("新航班号：");
-    sendAndPrint(client, { "CHANGE", session.token, orderId, newFlightNo });
+    sendRequest(client, { "SHOW_WAITLIST", session.token });
 }
 
-static void doOrders(TcpClient& client, const Session& session)
+static void addFlight(TcpClient& client, const Session& session)
 {
-    if (!requireLogin(session))
+    if (!requireAdmin(session))
     {
         return;
     }
 
-    sendAndPrint(client, { "MY_ORDERS", session.token });
+    std::string flightNo = inputLine("航班号:");
+    std::string start = inputLine("出发地:");
+    std::string destination = inputLine("目的地:");
+    std::string date = inputLine("日期:");
+    std::string startTime = inputLine("起飞时间:");
+    std::string arriveTime = inputLine("到达时间:");
+    std::string price = inputLine("票价:");
+    std::string totalSeat = inputLine("总座位:");
+
+    sendRequest(client, { "ADD_FLIGHT", session.token, flightNo, start, destination, date, startTime, arriveTime, price, totalSeat });
+}
+
+static void deleteFlight(TcpClient& client, const Session& session)
+{
+    if (!requireAdmin(session))
+    {
+        return;
+    }
+
+    std::string flightNo = inputLine("输入航班号:");
+    sendRequest(client, { "DELETE_FLIGHT", session.token, flightNo });
+}
+
+static void updateFlight(TcpClient& client, const Session& session)
+{
+    if (!requireAdmin(session))
+    {
+        return;
+    }
+
+    std::string flightNo = inputLine("请输入航班号:");
+    std::string price = inputLine("输入新票价:");
+    sendRequest(client, { "UPDATE_FLIGHT", session.token, flightNo, price });
+}
+
+static void showPassengers(TcpClient& client, const Session& session)
+{
+    if (!requireAdmin(session))
+    {
+        return;
+    }
+
+    sendRequest(client, { "SHOW_PASSENGERS", session.token });
 }
 
 void runClient()
@@ -322,49 +439,97 @@ void runClient()
     }
 
     Session session;
+    if (!loginFlow(client, session))
+    {
+        return;
+    }
+
     while (true)
     {
-        showMenu(session);
-
         std::string choice;
+
+        if (session.role == 0)
+        {
+            adminMenu();
+            std::getline(std::cin, choice);
+
+            if (choice == "1")
+            {
+                showFlights(client);
+            }
+            else if (choice == "2")
+            {
+                searchFlights(client);
+            }
+            else if (choice == "3")
+            {
+                addFlight(client, session);
+            }
+            else if (choice == "4")
+            {
+                deleteFlight(client, session);
+            }
+            else if (choice == "5")
+            {
+                updateFlight(client, session);
+            }
+            else if (choice == "6")
+            {
+                showPassengers(client, session);
+            }
+            else if (choice == "7")
+            {
+                showOrderFile(client, session);
+            }
+            else if (choice == "8")
+            {
+                showWaitQueue(client, session);
+            }
+            else if (choice == "0")
+            {
+                std::vector<std::string> response;
+                client.request({ "LOGOUT", session.token }, response);
+                return;
+            }
+            else
+            {
+                std::cout << "无效选择\n";
+            }
+
+            continue;
+        }
+
+        userMenu();
         std::getline(std::cin, choice);
 
         if (choice == "1")
         {
-            doRegister(client);
+            showFlights(client);
         }
         else if (choice == "2")
         {
-            doLogin(client, session);
+            searchFlights(client);
         }
         else if (choice == "3")
         {
-            doSearch(client);
+            bookTicket(client, session);
         }
         else if (choice == "4")
         {
-            doBook(client, session);
+            refundTicket(client, session);
         }
         else if (choice == "5")
         {
-            doRefund(client, session);
+            showOrderFile(client, session);
         }
         else if (choice == "6")
         {
-            doChange(client, session);
-        }
-        else if (choice == "7")
-        {
-            doOrders(client, session);
+            showWaitQueue(client, session);
         }
         else if (choice == "0")
         {
-            if (session.loggedIn)
-            {
-                std::vector<std::string> response;
-                client.request({ "LOGOUT", session.token }, response);
-            }
-            std::cout << "已退出客户端\n";
+            std::vector<std::string> response;
+            client.request({ "LOGOUT", session.token }, response);
             return;
         }
         else
