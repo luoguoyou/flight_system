@@ -14,6 +14,8 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
+// 交互式客户端使用的 TCP 封装。
+// 负责隐藏 WinSock 初始化、重连、发送和按行接收这些底层细节。
 class TcpClient
 {
 public:
@@ -160,6 +162,7 @@ private:
     }
 };
 
+// 记录当前客户端登录用户，以及服务端分配的会话令牌。
 struct Session
 {
     bool loggedIn = false;
@@ -168,6 +171,7 @@ struct Session
     int role = 1;
 };
 
+// 打印提示语后，从控制台读取一整行输入。
 static std::string inputLine(const std::string& prompt)
 {
     std::string value;
@@ -176,6 +180,8 @@ static std::string inputLine(const std::string& prompt)
     return value;
 }
 
+// 向服务端发送一次请求，打印可直接阅读的返回内容，
+// 并在需要时把解析后的原始字段交给调用方继续判断。
 static bool sendRequest(TcpClient& client, const std::vector<std::string>& fields, std::vector<std::string>* raw = NULL)
 {
     std::vector<std::string> response;
@@ -203,6 +209,7 @@ static bool sendRequest(TcpClient& client, const std::vector<std::string>& field
     return !response.empty() && response[0] == "OK";
 }
 
+// 需要登录后才能执行的功能，统一先走这个校验。
 static bool requireLogin(const Session& session)
 {
     if (!session.loggedIn)
@@ -214,6 +221,7 @@ static bool requireLogin(const Session& session)
     return true;
 }
 
+// 管理员专属功能的统一权限校验。
 static bool requireAdmin(const Session& session)
 {
     if (!requireLogin(session))
@@ -230,6 +238,8 @@ static bool requireAdmin(const Session& session)
     return true;
 }
 
+// 按原系统流程执行：
+// 先注册或登录，再根据角色进入对应菜单。
 static bool loginFlow(TcpClient& client, Session& session)
 {
     while (true)
@@ -277,6 +287,7 @@ static bool loginFlow(TcpClient& client, Session& session)
     }
 }
 
+// 保留原本地系统的用户菜单内容。
 static void userMenu()
 {
     printf("\n");
@@ -290,6 +301,7 @@ static void userMenu()
     printf("0 退出系统\n");
 }
 
+// 保留原本地系统的管理员菜单内容。
 static void adminMenu()
 {
     printf("\n");
@@ -305,17 +317,21 @@ static void adminMenu()
     printf("0 退出系统\n");
 }
 
+// 航班列表的格式由服务端统一生成，客户端只负责请求和显示。
 static void showFlights(TcpClient& client)
 {
     sendRequest(client, { "LIST_FLIGHTS" });
 }
 
+// 原本地系统按目的地查询，这里保持同样的交互方式。
 static void searchFlights(TcpClient& client)
 {
     std::string destination = inputLine("请输入目的地:");
     sendRequest(client, { "SEARCH_DESTINATION", destination });
 }
 
+// 采集与原本地系统一致的订票输入项。
+// 如果余票不足，再按原系统逻辑询问是否加入候补队列。
 static void bookTicket(TcpClient& client, const Session& session)
 {
     if (!requireLogin(session))
@@ -335,6 +351,8 @@ static void bookTicket(TcpClient& client, const Session& session)
         return;
     }
 
+    // 第一次订票因余票不足失败后，如果用户确认候补，
+    // 就带上 WAIT 标记再次请求，让服务端加入候补队列。
     if (response.size() >= 2 && response[1].find("余票不足") != std::string::npos)
     {
         std::string choice = inputLine("是否进入候补队列？1-是 0-否:");
@@ -345,6 +363,7 @@ static void bookTicket(TcpClient& client, const Session& session)
     }
 }
 
+// 按订单号退票，和原本地系统的操作方式一致。
 static void refundTicket(TcpClient& client, const Session& session)
 {
     if (!requireLogin(session))
@@ -356,6 +375,7 @@ static void refundTicket(TcpClient& client, const Session& session)
     sendRequest(client, { "REFUND", session.token, orderId });
 }
 
+// 显示服务端返回的订单记录表。
 static void showOrderFile(TcpClient& client, const Session& session)
 {
     if (!requireLogin(session))
@@ -366,6 +386,7 @@ static void showOrderFile(TcpClient& client, const Session& session)
     sendRequest(client, { "SHOW_ORDERS", session.token });
 }
 
+// 显示服务端返回的当前候补队列表。
 static void showWaitQueue(TcpClient& client, const Session& session)
 {
     if (!requireLogin(session))
@@ -376,6 +397,7 @@ static void showWaitQueue(TcpClient& client, const Session& session)
     sendRequest(client, { "SHOW_WAITLIST", session.token });
 }
 
+// 管理员专用：新增航班。
 static void addFlight(TcpClient& client, const Session& session)
 {
     if (!requireAdmin(session))
@@ -395,6 +417,7 @@ static void addFlight(TcpClient& client, const Session& session)
     sendRequest(client, { "ADD_FLIGHT", session.token, flightNo, start, destination, date, startTime, arriveTime, price, totalSeat });
 }
 
+// 管理员专用：按航班号删除航班。
 static void deleteFlight(TcpClient& client, const Session& session)
 {
     if (!requireAdmin(session))
@@ -406,6 +429,7 @@ static void deleteFlight(TcpClient& client, const Session& session)
     sendRequest(client, { "DELETE_FLIGHT", session.token, flightNo });
 }
 
+// 管理员专用：修改票价，和本地版菜单功能保持一致。
 static void updateFlight(TcpClient& client, const Session& session)
 {
     if (!requireAdmin(session))
@@ -418,6 +442,7 @@ static void updateFlight(TcpClient& client, const Session& session)
     sendRequest(client, { "UPDATE_FLIGHT", session.token, flightNo, price });
 }
 
+// 管理员专用：按航班分组查看订票乘客信息。
 static void showPassengers(TcpClient& client, const Session& session)
 {
     if (!requireAdmin(session))
@@ -428,6 +453,8 @@ static void showPassengers(TcpClient& client, const Session& session)
     sendRequest(client, { "SHOW_PASSENGERS", session.token });
 }
 
+// 网络客户端入口。
+// 登录成功后，根据角色进入原系统对应的用户或管理员菜单。
 void runClient()
 {
     initConsole();
@@ -448,6 +475,7 @@ void runClient()
     {
         std::string choice;
 
+        // 角色 0 表示管理员，进入原系统管理员菜单流程。
         if (session.role == 0)
         {
             adminMenu();
@@ -499,6 +527,7 @@ void runClient()
             continue;
         }
 
+        // 其余角色统一按普通用户菜单流程处理。
         userMenu();
         std::getline(std::cin, choice);
 

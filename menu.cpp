@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "waitlist.h"
 
+// 原本地系统的用户菜单，网络客户端现在按这套内容对齐。
 void userMenu()
 {
     printf("\n");
@@ -19,6 +20,7 @@ void userMenu()
     printf("0 退出系统\n");
 }
 
+// 原本地系统的管理员菜单，网络客户端现在按这套内容对齐。
 void adminMenu()
 {
     printf("\n");
@@ -34,6 +36,8 @@ void adminMenu()
     printf("0 退出系统\n");
 }
 
+// 单机本地版本的系统入口。
+// 这里会先加载文件数据、执行登录，再进入对应的用户或管理员菜单循环。
 void runSystem()
 {
     int role;

@@ -17,10 +17,15 @@
 #include <unordered_map>
 #include <vector>
 
+// 所有共享的航班、用户、订单内存数据都由这把互斥锁保护，
+// 因为服务端可能同时处理多个客户端线程的请求。
 static std::mutex dataMutex;
+
+// 保存“服务端会话令牌 -> 登录用户名”的映射关系。
 static std::unordered_map<std::string, std::string> sessions;
 static int nextSessionNumber = 1;
 
+// 对 passenger.txt 中一条订单记录的轻量级内存表示。
 struct OrderRecord
 {
     std::string orderId;
@@ -41,6 +46,7 @@ static std::string fail(const std::string& body)
     return makePacket({ "ERR", body });
 }
 
+// 把 std::string 安全复制到旧结构体使用的定长字符数组里。
 static void copyText(char target[], size_t size, const std::string& value)
 {
     if (size == 0)
@@ -52,6 +58,7 @@ static void copyText(char target[], size_t size, const std::string& value)
     target[size - 1] = '\0';
 }
 
+// 在全局用户数组中查找指定用户名的位置。
 static int findUser(const std::string& username)
 {
     for (int i = 0; i < userCount; i++)
@@ -65,6 +72,7 @@ static int findUser(const std::string& username)
     return -1;
 }
 
+// 校验请求字段里的正整数输入。
 static bool isPositiveInt(const std::string& text, int& value)
 {
     if (text.empty())
@@ -84,6 +92,7 @@ static bool isPositiveInt(const std::string& text, int& value)
     return value > 0;
 }
 
+// 校验请求字段里的正浮点数输入。
 static bool isPositiveFloat(const std::string& text, float& value)
 {
     if (text.empty())
@@ -96,6 +105,7 @@ static bool isPositiveFloat(const std::string& text, float& value)
     return endPtr != NULL && *endPtr == '\0' && value > 0;
 }
 
+// 登录成功后，为当前用户创建一个简单的内存会话令牌。
 static std::string createSession(const std::string& username)
 {
     std::string token = "S" + std::to_string(nextSessionNumber++);
@@ -103,6 +113,7 @@ static std::string createSession(const std::string& username)
     return token;
 }
 
+// 根据请求里的令牌字段，解析出当前登录用户名。
 static bool getSessionUser(const std::vector<std::string>& fields, size_t tokenIndex, std::string& username)
 {
     if (fields.size() <= tokenIndex)
@@ -120,6 +131,7 @@ static bool getSessionUser(const std::vector<std::string>& fields, size_t tokenI
     return true;
 }
 
+// 校验当前请求是否来自已登录的管理员账号。
 static bool requireAdmin(const std::vector<std::string>& fields, size_t tokenIndex, std::string& username)
 {
     if (!getSessionUser(fields, tokenIndex, username))
@@ -131,6 +143,7 @@ static bool requireAdmin(const std::vector<std::string>& fields, size_t tokenInd
     return userIndex != -1 && users[userIndex].role == 0;
 }
 
+// 注册成功后，把用户数据持久化到文件。
 static void saveUsers()
 {
     FILE* fp = fopen("user.txt", "w");
@@ -148,6 +161,7 @@ static void saveUsers()
     fclose(fp);
 }
 
+// 把 passenger.txt 里的所有订单读到便于处理的 vector 中。
 static std::vector<OrderRecord> loadOrders()
 {
     std::vector<OrderRecord> orders;
@@ -182,6 +196,7 @@ static std::vector<OrderRecord> loadOrders()
     return orders;
 }
 
+// 用当前订单集合重新写回 passenger.txt。
 static bool saveOrders(const std::vector<OrderRecord>& orders)
 {
     FILE* fp = fopen("passenger.txt", "w");
@@ -207,6 +222,7 @@ static bool saveOrders(const std::vector<OrderRecord>& orders)
     return true;
 }
 
+// 为航班显示/查询复用统一的表头格式。
 static void appendFlightTableHeader(std::ostringstream& out)
 {
     out << "====================================================================================================================\n";
@@ -214,6 +230,7 @@ static void appendFlightTableHeader(std::ostringstream& out)
     out << "====================================================================================================================\n";
 }
 
+// 把单条航班数据格式化成与原系统一致的表格行。
 static std::string formatFlightRow(const Flight& f)
 {
     char line[256];
@@ -231,6 +248,7 @@ static std::string formatFlightRow(const Flight& f)
     return line;
 }
 
+// 把单条订单格式化为“订单记录列表”使用的行文本。
 static std::string formatOrderBrief(const OrderRecord& order)
 {
     char line[256];
@@ -245,6 +263,7 @@ static std::string formatOrderBrief(const OrderRecord& order)
     return line;
 }
 
+// 把单条订单格式化为带航班补充信息的详情文本。
 static std::string formatOrderDetail(const OrderRecord& order)
 {
     std::ostringstream out;
@@ -268,6 +287,7 @@ static std::string formatOrderDetail(const OrderRecord& order)
     return out.str();
 }
 
+// 当航班出现可用座位时，把一名候补乘客转成正式订单。
 static void confirmWaitingPassenger(int flightPos, const WaitingPassenger& waitingPassenger)
 {
     Passenger passenger;
@@ -282,6 +302,8 @@ static void confirmWaitingPassenger(int flightPos, const WaitingPassenger& waiti
     savePassengerToFile(&passenger, flight[flightPos].flightNo);
 }
 
+// 在退票或改签释放座位后，持续检查该航班候补队列，
+// 只要当前余票还能满足队首乘客，就依次补票。
 static void processWaitingListForFlight(int flightPos)
 {
     while (true)
@@ -309,6 +331,7 @@ static void processWaitingListForFlight(int flightPos)
     saveWaitQueue();
 }
 
+// 退出登录时清除当前客户端对应的会话。
 static std::string handleLogout(const std::vector<std::string>& fields)
 {
     if (fields.size() >= 2)
@@ -319,6 +342,7 @@ static std::string handleLogout(const std::vector<std::string>& fields)
     return ok("已退出登录");
 }
 
+// 注册普通用户账号。
 static std::string handleRegister(const std::vector<std::string>& fields)
 {
     if (fields.size() < 3)
@@ -350,6 +374,7 @@ static std::string handleRegister(const std::vector<std::string>& fields)
     return ok("注册成功，请登录");
 }
 
+// 校验用户名和密码，并把角色与会话令牌返回给客户端。
 static std::string handleLogin(const std::vector<std::string>& fields)
 {
     if (fields.size() < 3)
@@ -367,6 +392,7 @@ static std::string handleLogin(const std::vector<std::string>& fields)
     return makePacket({ "OK", "登录成功", std::to_string(users[index].role), fields[1], token });
 }
 
+// 返回完整航班列表。
 static std::string handleListFlights()
 {
     if (flightCount == 0)
@@ -386,6 +412,7 @@ static std::string handleListFlights()
     return ok(out.str());
 }
 
+// 实现原本地系统“按目的地查询航班”的行为。
 static std::string handleSearchDestination(const std::vector<std::string>& fields)
 {
     if (fields.size() < 2 || fields[1].empty())
@@ -415,6 +442,7 @@ static std::string handleSearchDestination(const std::vector<std::string>& field
     return ok(out.str());
 }
 
+// 处理订票；如果客户端显式传入 WAIT，则进入候补逻辑。
 static std::string handleBookTicket(const std::vector<std::string>& fields)
 {
     if (fields.size() < 7)
@@ -447,6 +475,7 @@ static std::string handleBookTicket(const std::vector<std::string>& fields)
 
     if (flight[pos].remainSeat < ticketNum)
     {
+        // 当用户确认候补时，客户端会带 WAIT 标记重试一次请求。
         if (fields.size() >= 8 && fields[7] == "WAIT")
         {
             Passenger passenger;
@@ -500,6 +529,7 @@ static std::string handleBookTicket(const std::vector<std::string>& fields)
     return ok(out.str());
 }
 
+// 处理退票，并在释放座位后尝试为同航班候补乘客自动补票。
 static std::string handleRefundTicket(const std::vector<std::string>& fields)
 {
     if (fields.size() < 3)
@@ -569,6 +599,8 @@ static std::string handleRefundTicket(const std::vector<std::string>& fields)
     return ok(out.str());
 }
 
+// 把订单改签到另一航班，同时保持原有购票数量不变。
+// 如果旧航班因此释放座位，也会顺带处理旧航班的候补队列。
 static std::string handleChangeTicket(const std::vector<std::string>& fields)
 {
     if (fields.size() < 4)
@@ -638,6 +670,7 @@ static std::string handleChangeTicket(const std::vector<std::string>& fields)
     return ok(out.str());
 }
 
+// 返回原系统风格的“全部订单记录”表格。
 static std::string handleShowOrders(const std::vector<std::string>& fields)
 {
     std::string username;
@@ -666,6 +699,7 @@ static std::string handleShowOrders(const std::vector<std::string>& fields)
     return ok(out.str());
 }
 
+// 仅返回当前登录用户自己的订单详情。
 static std::string handleUserOrders(const std::vector<std::string>& fields)
 {
     if (fields.size() < 2)
@@ -700,6 +734,7 @@ static std::string handleUserOrders(const std::vector<std::string>& fields)
     return ok(out.str());
 }
 
+// 以表格形式返回当前候补队列。
 static std::string handleShowWaitQueue(const std::vector<std::string>& fields)
 {
     std::string username;
@@ -736,6 +771,7 @@ static std::string handleShowWaitQueue(const std::vector<std::string>& fields)
     return ok(out.str());
 }
 
+// 管理员视角：按航班分组展示订票乘客，和本地管理端显示方式保持一致。
 static std::string handleShowPassengers(const std::vector<std::string>& fields)
 {
     std::string username;
@@ -791,6 +827,7 @@ static std::string handleShowPassengers(const std::vector<std::string>& fields)
     return ok(out.str());
 }
 
+// 管理员功能：新增一条航班。
 static std::string handleAddFlight(const std::vector<std::string>& fields)
 {
     if (fields.size() < 10)
@@ -838,6 +875,7 @@ static std::string handleAddFlight(const std::vector<std::string>& fields)
     return ok("新增成功");
 }
 
+// 管理员功能：按航班号删除航班。
 static std::string handleDeleteFlight(const std::vector<std::string>& fields)
 {
     if (fields.size() < 3)
@@ -867,6 +905,7 @@ static std::string handleDeleteFlight(const std::vector<std::string>& fields)
     return ok("删除成功");
 }
 
+// 管理员功能：只修改票价字段，与本地版逻辑一致。
 static std::string handleUpdateFlight(const std::vector<std::string>& fields)
 {
     if (fields.size() < 4)
@@ -897,6 +936,7 @@ static std::string handleUpdateFlight(const std::vector<std::string>& fields)
     return ok("修改成功");
 }
 
+// 服务端开始接收客户端之前，先把系统持久化数据全部载入内存。
 void initServerData()
 {
     std::lock_guard<std::mutex> guard(dataMutex);
@@ -915,6 +955,8 @@ void initServerData()
     initOrderNumber();
 }
 
+// 所有客户端命令的统一分发入口。
+// 每次处理请求时都持有互斥锁，保证文件和内存状态的一致性。
 std::string handleClientRequest(const std::string& request)
 {
     std::lock_guard<std::mutex> guard(dataMutex);
