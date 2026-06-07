@@ -1,6 +1,4 @@
-#pragma once
-
-#include <string>
+﻿#pragma once
 
 void initServerData();
-std::string handleClientRequest(const std::string& request);
+void handleClientRequest(const char* request, char* out, int outSize);

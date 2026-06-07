@@ -1,28 +1,25 @@
-#pragma once
+﻿#pragma once
 
 #include "common.h"
 
-struct Passenger
-{
+typedef struct Passenger {
     char orderId[20];
     char name[20];
     char phone[20];
     char id[20];
     int ticketNum;
-    Passenger* next;
-};
+    struct Passenger* next;
+} Passenger;
 
-struct WaitingPassenger
-{
+typedef struct WaitingPassenger {
     char flightNo[20];
     char name[20];
     char phone[20];
     char id[20];
     int ticketNum;
-};
+} WaitingPassenger;
 
-struct Flight
-{
+typedef struct Flight {
     char flightNo[20];
     char start[20];
     char destination[20];
@@ -32,16 +29,15 @@ struct Flight
     float price;
     int totalSeat;
     int remainSeat;
-    Passenger* plist;
-};
+    struct Passenger* plist;
+} Flight;
 
-struct User
-{
+typedef struct User {
     char username[20];
     char password[20];
     int role;
-};
+} User;
 
-constexpr int MAX_FLIGHT = 100;
-constexpr int MAX_USER = 20;
-constexpr int MAX_WAIT = 100;
+#define MAX_FLIGHT 100
+#define MAX_USER 20
+#define MAX_WAIT 100

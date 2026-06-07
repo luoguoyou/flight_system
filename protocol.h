@@ -1,9 +1,20 @@
 #pragma once
 
-#include <string>
-#include <vector>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-std::string escapeField(const std::string& value);
-std::string unescapeField(const std::string& value);
-std::vector<std::string> splitPacket(const std::string& packet);
-std::string makePacket(const std::vector<std::string>& fields);
+#define PROTOCOL_MAX_FIELDS 32
+#define PROTOCOL_MAX_FIELD_LEN 4096
+
+// Escape special chars (|, %, \n, \r) in src into out buffer
+void escapeField(const char* src, char* out);
+
+// Unescape %XX sequences back to original chars
+void unescapeField(const char* src, char* out);
+
+// Split a packet by | delimiter, returns field count (up to PROTOCOL_MAX_FIELDS)
+int splitPacket(const char* packet, char fields[PROTOCOL_MAX_FIELDS][PROTOCOL_MAX_FIELD_LEN]);
+
+// Join multiple fields with | separator into one packet string
+void makePacket(const char** fields, int count, char* out, int outSize);

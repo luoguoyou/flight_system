@@ -76,7 +76,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <CompileAs>CompileAsC</CompileAs>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -95,7 +95,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <CompileAs>CompileAsC</CompileAs>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -112,7 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <CompileAs>CompileAsC</CompileAs>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -131,7 +131,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <CompileAs>CompileAsC</CompileAs>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -143,18 +143,18 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="booking.cpp" />
-    <ClCompile Include="client.cpp" />
-    <ClCompile Include="flight_ops.cpp" />
-    <ClCompile Include="globals.cpp" />
-    <ClCompile Include="menu.cpp" />
-    <ClCompile Include="protocol.cpp" />
-    <ClCompile Include="server.cpp" />
-    <ClCompile Include="service.cpp" />
-    <ClCompile Include="user.cpp" />
-    <ClCompile Include="utils.cpp" />
-    <ClCompile Include="waitlist.cpp" />
-    <ClCompile Include="航班信息系统.cpp" />
+    <ClCompile Include="booking.c" />
+    <ClCompile Include="client.c" />
+    <ClCompile Include="flight_ops.c" />
+    <ClCompile Include="globals.c" />
+    <ClCompile Include="menu.c" />
+    <ClCompile Include="protocol.c" />
+    <ClCompile Include="server.c" />
+    <ClCompile Include="service.c" />
+    <ClCompile Include="user.c" />
+    <ClCompile Include="utils.c" />
+    <ClCompile Include="waitlist.c" />
+    <ClCompile Include="航班信息系统.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="booking.h" />
